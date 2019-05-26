@@ -77,12 +77,12 @@ class GitRepository(object):
 
 # Utilities
 
-## TODO : Rename to a better descriptive name
+# TODO : Rename to a better descriptive name
 def repo_path(repo, *path):
     """COmpute path under repo's gitdiir"""
     return os.path.join(repo.gitdir, *path)
 
-## TODO : Rename to a better descriptive name
+# TODO : Rename to a better descriptive name
 def repo_file(repo, *path, mkdir=False):
     """Same as repo_path but created dirname if it is not available.
     For exampl, repo_file(r, \"refs\" \"remotes\", \"origin\", \"HEAD\") will create
@@ -90,15 +90,57 @@ def repo_file(repo, *path, mkdir=False):
     if repo_dir(repo, *path):
         return repo_path(repo, *path)
 
-## TODO : Rename to a better descriptive name
+# TODO : Rename to a better descriptive name
+
+
 def repo_dir(repo, *path, mkdir=False):
     path = repo_path(repo, *path)
     if os.path.exists(path):
         if (os.path.isdir(path)):
             return path
         else:
-            return Exception("Not a dorectory %s" % path)
+            return Exception("Not a directory %s" % path)
     if mkdir:
         os.makedirs(path)
         return path
     return None
+
+def repo_default_config():
+    """Creates the default config for the repo"""
+    ret = configparser.ConfigParser()
+    ret.add_section("core")
+    ret.set("core", "repositoryformatversion", "0")
+    ret.set("core", "filemode", "false")
+    ret.set("core", "bare", "false")
+    return ret
+
+# Repo lifecycle
+def repo_create(path):
+    """Creates a new repository at path"""
+    repo = GitRepository(path, True)
+
+    # First ensure that the path does not exist, or is an empty dir
+    if os.path.exists(repo.gitdir):
+        if not os.path.isdir(repo.worktree):
+            raise Exception("%s is not a directory" % path)
+        if os.listdir(repo.worktree):
+            raise Exception("%s is not empty" % path)
+    else:
+        os.makedirs(repo.worktree)
+    assert(repo_dir(repo, "branches", mkdir=True))
+    assert(repo_dir(repo, "objects", mkdir=True))
+    assert(repo_dir(repo, "refs", "tags", mkdir=True))
+    assert(repo_dir(repo, "refs", "head", mkdir=True))
+
+    # .git/description
+    with open(repo_file(repo, "description"),"w") as f:
+        f.write("Unnamed repository: edit this file description to name the repository.\n")
+    
+    # .git/HEAD
+    with open(repo_file(repo, "HEAD"),"w") as f:
+        f.write("ref: refs/heads/master\n")
+    
+    with open(repo_file(repo, "config"), "w") as f:
+        config = repo_default_config()
+        config.write(f)
+    return repo
