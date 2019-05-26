@@ -8,10 +8,22 @@ import re
 import sys
 import zlib
 
-# CLI read arguments
+# -------------------CLI read arguments-------------------
 argparser = argparse.ArgumentParser(description="The stupid content tracker")
 argsubparsers = argparser.add_subparsers(title="Commands", dest="command")
 argsubparsers.required = True
+argsp_init = argsubparsers.add_parser(
+    "init", help="Initialize a new, empty repository.")
+argsp_init.add_argument("path", metavar="directory", nargs="?",
+                        default=".", help="where to create the repository")
+
+# -------------------CLI command handlers-------------------
+
+
+def cmd_init(args):
+    repo_create(args.path)
+
+# -------------------Main entry point-------------------
 
 
 def main(argv=sys.argv[1:]):
@@ -45,7 +57,7 @@ def main(argv=sys.argv[1:]):
     elif args.command == "tag":
         cmd_tag(args)
 
-# GitRepository
+# -------------------GitRepository-------------------
 
 
 class GitRepository(object):
@@ -75,25 +87,26 @@ class GitRepository(object):
                 raise Exception(
                     "Unsupported reposirotyformatversion %s" % vers)
 
-# Utilities
+# -------------------Utilities-------------------
 
-# TODO : Rename to a better descriptive name
+
 def repo_path(repo, *path):
     """COmpute path under repo's gitdiir"""
+    """TODO : Rename to a better descriptive name"""
     return os.path.join(repo.gitdir, *path)
 
-# TODO : Rename to a better descriptive name
+
 def repo_file(repo, *path, mkdir=False):
     """Same as repo_path but created dirname if it is not available.
     For exampl, repo_file(r, \"refs\" \"remotes\", \"origin\", \"HEAD\") will create
     .git/refs/remotes/origin."""
-    if repo_dir(repo, *path):
+    """TODO : Rename to a better descriptive name"""
+    if repo_dir(repo, *path[:-1], mkdir=mkdir):
         return repo_path(repo, *path)
-
-# TODO : Rename to a better descriptive name
 
 
 def repo_dir(repo, *path, mkdir=False):
+    """TODO : Rename to a better descriptive name"""
     path = repo_path(repo, *path)
     if os.path.exists(path):
         if (os.path.isdir(path)):
@@ -105,6 +118,7 @@ def repo_dir(repo, *path, mkdir=False):
         return path
     return None
 
+
 def repo_default_config():
     """Creates the default config for the repo"""
     ret = configparser.ConfigParser()
@@ -114,7 +128,9 @@ def repo_default_config():
     ret.set("core", "bare", "false")
     return ret
 
-# Repo lifecycle
+# -------------------Repo lifecycle-------------------
+
+
 def repo_create(path):
     """Creates a new repository at path"""
     repo = GitRepository(path, True)
@@ -133,13 +149,14 @@ def repo_create(path):
     assert(repo_dir(repo, "refs", "head", mkdir=True))
 
     # .git/description
-    with open(repo_file(repo, "description"),"w") as f:
-        f.write("Unnamed repository: edit this file description to name the repository.\n")
-    
+    with open(repo_file(repo, "description"), "w") as f:
+        f.write(
+            "Unnamed repository: edit this file description to name the repository.\n")
+
     # .git/HEAD
-    with open(repo_file(repo, "HEAD"),"w") as f:
+    with open(repo_file(repo, "HEAD"), "w") as f:
         f.write("ref: refs/heads/master\n")
-    
+
     with open(repo_file(repo, "config"), "w") as f:
         config = repo_default_config()
         config.write(f)
