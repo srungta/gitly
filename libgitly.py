@@ -74,3 +74,31 @@ class GitRepository(object):
             if vars != 0:
                 raise Exception(
                     "Unsupported reposirotyformatversion %s" % vers)
+
+# Utilities
+
+## TODO : Rename to a better descriptive name
+def repo_path(repo, *path):
+    """COmpute path under repo's gitdiir"""
+    return os.path.join(repo.gitdir, *path)
+
+## TODO : Rename to a better descriptive name
+def repo_file(repo, *path, mkdir=False):
+    """Same as repo_path but created dirname if it is not available.
+    For exampl, repo_file(r, \"refs\" \"remotes\", \"origin\", \"HEAD\") will create
+    .git/refs/remotes/origin."""
+    if repo_dir(repo, *path):
+        return repo_path(repo, *path)
+
+## TODO : Rename to a better descriptive name
+def repo_dir(repo, *path, mkdir=False):
+    path = repo_path(repo, *path)
+    if os.path.exists(path):
+        if (os.path.isdir(path)):
+            return path
+        else:
+            return Exception("Not a dorectory %s" % path)
+    if mkdir:
+        os.makedirs(path)
+        return path
+    return None
